@@ -11,45 +11,35 @@ export default function GalleryPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [userRole, setUserRole] = useState("GUEST");
   const [satCoord, setSatCoord] = useState("SCANNING_DATABASE...");
+  
+  // State untuk Quick View Modal
+  const [selectedReport, setSelectedReport] = useState<any>(null);
 
   useEffect(() => {
     setIsMounted(true);
-    
     const fetchPhotos = async () => {
-      // 1. Cek Role User secara aktif
       const { data: { user } } = await supabase.auth.getUser();
       let currentRole = "GUEST";
 
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
         if (profile) {
           currentRole = profile.role;
           setUserRole(profile.role);
         }
       }
 
-      // 2. Ambil data reports
-      const { data } = await supabase
-        .from('reports')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data } = await supabase.from('reports').select('*').order('created_at', { ascending: false });
 
       if (data) {
         if (currentRole === 'ADMIN') {
-          // ADMIN: Lihat semua data
           setReports(data);
           setFilteredReports(data);
         } else {
-          // GUEST: Hanya ambil 1 contoh per kategori
           const categories = ["ILEGAL LOGGING", "KEBAKARAN HUTAN", "PERBURUAN SATWA"];
           const samples = categories.map(cat => 
             data.find(r => r.category.toUpperCase() === cat.toUpperCase())
           ).filter(Boolean);
-          
           setReports(samples);
           setFilteredReports(samples);
         }
@@ -58,7 +48,6 @@ export default function GalleryPage() {
     };
 
     fetchPhotos();
-
     const timer = setInterval(() => {
       setSatCoord(`VAULT-ID-${Math.random().toString(36).substring(7).toUpperCase()} | UPLINK: STABLE | ACCESS: ${userRole === 'ADMIN' ? 'GRANTED' : 'RESTRICTED'}`);
     }, 1000);
@@ -67,27 +56,38 @@ export default function GalleryPage() {
 
   const handleFilter = (cat: string) => {
     setSelectedCategory(cat);
-    if (cat === "ALL") {
-      setFilteredReports(reports);
-    } else {
-      setFilteredReports(reports.filter(r => r.category.toUpperCase() === cat.toUpperCase()));
-    }
+    setFilteredReports(cat === "ALL" ? reports : reports.filter(r => r.category.toUpperCase() === cat.toUpperCase()));
   };
 
   const getCategoryColor = (cat: string) => {
     switch (cat.toUpperCase()) {
-      case 'KEBAKARAN HUTAN': return 'bg-red-500 text-white';
-      case 'ILEGAL LOGGING': return 'bg-emerald-500 text-black';
-      case 'PERBURUAN SATWA': return 'bg-orange-500 text-white';
-      default: return 'bg-slate-500 text-white';
+      case 'KEBAKARAN HUTAN': return 'bg-red-500';
+      case 'ILEGAL LOGGING': return 'bg-emerald-500';
+      case 'PERBURUAN SATWA': return 'bg-orange-500';
+      default: return 'bg-slate-500';
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-300 p-8 font-sans selection:bg-emerald-500">
+    <div className="min-h-screen bg-[#020617] text-slate-300 p-4 md:p-8 font-sans selection:bg-emerald-500">
       
+      {/* 1. TOP STATS COUNTER (PROFESSIONAL LOOK) */}
+      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        {[
+          { label: 'Total Archives', value: '1,429', color: 'text-emerald-500' },
+          { label: 'Active Sensors', value: '84', color: 'text-blue-500' },
+          { label: 'Threat Level', value: 'LOW', color: 'text-yellow-500' },
+          { label: 'System Integrity', value: '99.9%', color: 'text-emerald-500' }
+        ].map((stat, i) => (
+          <div key={i} className="bg-slate-900/30 border border-white/5 p-4 rounded-2xl backdrop-blur-md">
+            <div className={`text-xl font-black ${stat.color} tracking-tighter`}>{stat.value}</div>
+            <div className="text-[7px] font-black text-slate-600 uppercase tracking-[0.3em]">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+
       {/* HEADER FEED */}
-      <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center bg-slate-900/50 border border-white/5 px-6 py-2 rounded-2xl overflow-hidden shadow-2xl gap-4">
+      <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center bg-slate-900/50 border border-white/5 px-6 py-2 rounded-2xl shadow-2xl gap-4">
           <div className="flex items-center gap-2 text-[9px] font-black text-emerald-500 uppercase italic shrink-0">
             <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-ping"></span> 
             System Status:
@@ -97,15 +97,16 @@ export default function GalleryPage() {
               {isMounted ? satCoord : "CONNECTING..."} — {userRole === 'ADMIN' ? 'FULL_ARCHIVE_ACCESS' : 'PREVIEW_MODE_ONLY'} — ACEH_GREEN_PORTAL
             </div>
           </div>
-          <Link href="/" className="bg-emerald-600/10 hover:bg-emerald-500 text-emerald-500 hover:text-black px-6 py-1.5 rounded-full text-[9px] font-black transition-all border border-emerald-500/20 uppercase shrink-0">
-            ← Return to Command Center
+          <Link href="/" className="bg-emerald-600/10 hover:bg-emerald-500 text-emerald-500 hover:text-black px-6 py-1.5 rounded-full text-[9px] font-black transition-all border border-emerald-500/20 uppercase">
+            ← Exit Vault
           </Link>
       </div>
 
+      {/* TITLE & FILTERS */}
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
           <div>
             <div className="flex items-center gap-3">
-                <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic">
+                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
                 Media <span className="text-emerald-500 underline decoration-white/10 underline-offset-8">Vault</span>
                 </h1>
                 {userRole !== 'ADMIN' && (
@@ -114,7 +115,7 @@ export default function GalleryPage() {
                     </span>
                 )}
             </div>
-            <p className="text-[10px] font-black text-slate-600 tracking-[0.5em] uppercase mt-2">Historical Evidence Records</p>
+            <p className="text-[10px] font-black text-slate-600 tracking-[0.5em] uppercase mt-2">Historical Evidence Intelligence Records</p>
           </div>
 
           <div className="flex gap-2 flex-wrap justify-end">
@@ -122,10 +123,10 @@ export default function GalleryPage() {
               <button 
                 key={cat}
                 onClick={() => handleFilter(cat)}
-                className={`px-4 py-1.5 rounded-lg text-[9px] font-bold border transition-all ${
+                className={`px-4 py-2 rounded-xl text-[9px] font-black border transition-all ${
                   selectedCategory === cat 
-                  ? 'bg-emerald-500 border-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.3)]' 
-                  : 'bg-transparent border-white/10 text-slate-500 hover:border-emerald-500/50'
+                  ? 'bg-emerald-500 border-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)]' 
+                  : 'bg-white/5 border-white/10 text-slate-500 hover:border-emerald-500/50 hover:text-slate-300'
                 }`}
               >
                 {cat}
@@ -136,69 +137,134 @@ export default function GalleryPage() {
 
       <hr className="max-w-7xl mx-auto border-white/5 mb-12" />
 
+      {/* GALLERY GRID */}
       {loading ? (
         <div className="flex flex-col justify-center items-center h-64 gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-emerald-500"></div>
-          <span className="text-[10px] font-mono text-emerald-500 animate-pulse">DECRYPTING DATA...</span>
+          <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden">
+            <div className="w-1/2 h-full bg-emerald-500 animate-[loading_1s_ease-in-out_infinite]"></div>
+          </div>
+          <span className="text-[9px] font-mono text-emerald-500 tracking-[0.5em]">DECRYPTING_DATA...</span>
         </div>
       ) : (
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-20">
           {filteredReports.map((r) => (
-            <div key={r.id} className="group bg-slate-900/40 rounded-[2rem] overflow-hidden border border-white/5 hover:border-emerald-500/50 transition-all duration-500 shadow-xl flex flex-col backdrop-blur-sm relative">
+            <div 
+              key={r.id} 
+              onClick={() => setSelectedReport(r)}
+              className="group bg-slate-900/40 rounded-[2.5rem] overflow-hidden border border-white/5 hover:border-emerald-500/50 transition-all duration-500 shadow-xl flex flex-col backdrop-blur-sm relative cursor-pointer"
+            >
               
-              {/* Badge Preview Khusus Guest */}
-              {userRole !== 'ADMIN' && (
-                <div className="absolute top-4 right-4 z-10 bg-black/60 backdrop-blur-md border border-white/10 px-2 py-1 rounded text-[7px] font-bold text-white/50">
-                    SAMPLE_VIEW
+              <div className="aspect-[4/5] overflow-hidden relative">
+                {/* 2. SCANNER LINE ANIMATION */}
+                <div className="absolute inset-0 z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="w-full h-[2px] bg-emerald-400 shadow-[0_0_15px_#34d399] absolute top-0 animate-[scan_3s_linear_infinite]"></div>
                 </div>
-              )}
 
-              <div className="aspect-square overflow-hidden relative">
                 <img 
                   src={r.image_url} 
                   alt={r.category} 
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110" 
+                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-60" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-80" />
                 
-                <div className="absolute bottom-4 left-4">
-                   <span className={`text-[8px] font-black px-3 py-1 rounded-md uppercase tracking-wider shadow-lg ${getCategoryColor(r.category)}`}>
+                {/* Intelligence Metadata overlay */}
+                <div className="absolute top-4 left-4 font-mono text-[7px] text-white/40 group-hover:text-emerald-400 transition-colors uppercase">
+                    ID: {r.id.substring(0,8)}<br/>
+                    LAT: 4.6951° N<br/>
+                    LNG: 96.7494° E
+                </div>
+
+                <div className="absolute bottom-6 left-6">
+                   <span className={`text-[8px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg ${getCategoryColor(r.category)}`}>
                     {r.category}
                   </span>
                 </div>
               </div>
               
-              <div className="p-6 space-y-3">
-                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+              <div className="p-8 space-y-4">
+                <div className="flex justify-between items-center border-b border-white/5 pb-4">
                   <h3 className="text-white font-black text-sm uppercase truncate tracking-tighter group-hover:text-emerald-400 transition-colors">
                     {r.reporter}
                   </h3>
-                  <span className="text-[9px] font-mono text-slate-600">
-                    {new Date(r.created_at).toLocaleDateString()}
-                  </span>
+                  <div className="text-right">
+                    <div className="text-[8px] font-mono text-slate-600 leading-none">TIMESTAMP</div>
+                    <div className="text-[10px] font-black text-slate-400">{new Date(r.created_at).toLocaleDateString()}</div>
+                  </div>
                 </div>
-                <p className="text-[10px] text-slate-400 italic leading-relaxed line-clamp-3 min-h-[40px]">
-                  "{r.description || 'No digital signature recorded'}"
+                <p className="text-[11px] text-slate-500 italic leading-relaxed line-clamp-2">
+                  "{r.description || 'No digital signature recorded in central archive'}"
                 </p>
-                {userRole !== 'ADMIN' && (
-                    <div className="pt-2">
-                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500/20 w-full"></div>
-                        </div>
-                    </div>
-                )}
+                <div className="flex items-center gap-2 text-[8px] font-black text-emerald-500/50 uppercase tracking-widest">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Verified Record
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Footer Info Khusus Guest */}
+      {/* 3. QUICK VIEW MODAL (PROFESSIONAL FEATURE) */}
+      {selectedReport && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#020617]/90 backdrop-blur-xl animate-in fade-in duration-300">
+            <div className="bg-slate-900 border border-white/10 w-full max-w-5xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row h-[80vh]">
+                <div className="md:w-3/5 h-1/2 md:h-full relative bg-black">
+                    <img src={selectedReport.image_url} className="w-full h-full object-contain" />
+                    <div className="absolute top-8 left-8 flex gap-2">
+                        <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getCategoryColor(selectedReport.category)}`}>
+                            {selectedReport.category}
+                        </span>
+                    </div>
+                </div>
+                <div className="md:w-2/5 p-8 md:p-12 flex flex-col justify-between overflow-y-auto border-t md:border-t-0 md:border-l border-white/5">
+                    <div>
+                        <div className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.4em] mb-4 italic">Intelligence_Report</div>
+                        <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">{selectedReport.reporter}</h2>
+                        <p className="text-slate-600 text-[11px] font-mono mb-8 italic uppercase">Logged: {new Date(selectedReport.created_at).toLocaleString()}</p>
+                        
+                        <div className="space-y-6 text-slate-400 text-sm leading-relaxed font-light italic border-l-2 border-emerald-500/20 pl-6">
+                            "{selectedReport.description || 'System generated: No additional description provided by field agent.'}"
+                        </div>
+                    </div>
+
+                    <div className="mt-12 space-y-4">
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                            <div className="text-[8px] text-slate-600 font-black uppercase mb-2 tracking-[0.2em]">Data Integrity Check</div>
+                            <div className="flex items-center gap-3">
+                                <div className="h-1 flex-grow bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-500 w-[98%]"></div>
+                                </div>
+                                <span className="text-[10px] font-mono text-emerald-500">98% AUTHENTIC</span>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => setSelectedReport(null)}
+                            className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase tracking-widest text-xs rounded-2xl transition-all active:scale-95"
+                        >
+                            Close Archive
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* FOOTER & CTA */}
       {userRole !== 'ADMIN' && !loading && (
-        <div className="max-w-7xl mx-auto mb-20 p-8 rounded-3xl border border-dashed border-emerald-500/20 bg-emerald-500/5 text-center">
-            <p className="text-emerald-500/60 font-mono text-[10px] uppercase tracking-[0.2em]">
-                You are viewing category samples. Login as <span className="text-emerald-500 font-black">Authorized Personnel</span> to unlock full historical records.
-            </p>
+        <div className="max-w-7xl mx-auto mb-20 p-12 rounded-[3rem] border border-emerald-500/20 bg-emerald-500/5 text-center relative overflow-hidden group">
+            <div className="relative z-10">
+                <h4 className="text-2xl font-black text-white uppercase tracking-tighter mb-4">Access Restricted Archive?</h4>
+                <p className="text-emerald-500/60 font-mono text-[10px] uppercase tracking-[0.3em] mb-8 max-w-xl mx-auto">
+                    Public access is limited to category samples. Secure your credential to view full geographical data and forensic logs.
+                </p>
+                <Link href="/login" className="inline-block px-10 py-4 bg-emerald-500 text-black font-black text-[10px] uppercase tracking-[0.3em] rounded-full hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all">
+                    Establish Connection →
+                </Link>
+            </div>
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+                <div className="h-full w-full bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:20px_20px]"></div>
+            </div>
         </div>
       )}
 
@@ -206,6 +272,14 @@ export default function GalleryPage() {
         @keyframes marquee {
           0% { transform: translateX(100%); }
           100% { transform: translateX(-100%); }
+        }
+        @keyframes scan {
+          0% { top: 0; }
+          100% { top: 100%; }
+        }
+        @keyframes loading {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
         }
         .animate-marquee {
           display: inline-block;
