@@ -1,9 +1,9 @@
 "use client"
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Konfigurasi Custom Icons berdasarkan warna
+// Fungsi buat icon tetap sama seperti sebelumnya
 const createIcon = (color: string) => new L.Icon({
   iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -20,68 +20,64 @@ const icons: { [key: string]: L.Icon } = {
   'DEFAULT': createIcon('blue')
 };
 
-interface ReportPoint {
-  id: number;
-  reporter: string;
-  category: string;
-  lat: number;
-  lng: number;
-  image?: string;
-  description: string;
-}
-
-export default function Map({ reports }: { reports: ReportPoint[] }) {
+export default function Map({ reports }: { reports: any[] }) {
   const position: [number, number] = [4.1755, 96.1249];
 
   return (
-    <div className="w-full h-full rounded-2xl overflow-hidden shadow-inner z-0 border-2 border-slate-800 relative">
+    <div className="w-full h-full rounded-2xl overflow-hidden relative border-2 border-slate-800">
       
-      {/* --- UI LEGENDA --- */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/90 border border-emerald-500/50 p-3 rounded-xl backdrop-blur-sm shadow-xl">
-        <p className="text-[10px] font-bold text-emerald-400 mb-2 tracking-widest uppercase">Peta Wilayah</p>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-            <span className="text-[11px] text-slate-200">Ilegal Logging</span>
+      {/* Label Tactical (Z-Index disesuaikan) */}
+      <div className="absolute top-4 left-12 z-[1000] bg-slate-900/80 border border-emerald-500/50 px-3 py-1 rounded-md">
+        <span className="text-[10px] font-black text-emerald-500 tracking-tighter uppercase italic">
+          Tactical Monitoring
+        </span>
+      </div>
+
+      {/* Legenda tetap di kiri bawah */}
+      <div className="absolute bottom-6 left-6 z-[1000] bg-slate-900/90 border border-emerald-500/50 p-3 rounded-xl backdrop-blur-sm">
+        <p className="text-[9px] font-bold text-emerald-400 mb-2 uppercase">Peta Wilayah</p>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-[10px] text-slate-300">
+            <div className="w-2 h-2 rounded-full bg-green-500" /> Ilegal Logging
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
-            <span className="text-[11px] text-slate-200">Kebakaran Hutan</span>
+          <div className="flex items-center gap-2 text-[10px] text-slate-300">
+            <div className="w-2 h-2 rounded-full bg-red-500" /> Kebakaran Hutan
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"></div>
-            <span className="text-[11px] text-slate-200">Perburuan Satwa</span>
+          <div className="flex items-center gap-2 text-[10px] text-slate-300">
+            <div className="w-2 h-2 rounded-full bg-orange-500" /> Perburuan Satwa
           </div>
         </div>
       </div>
 
-      <MapContainer center={position} zoom={8} style={{ height: '100%', width: '100%' }}>
+      <MapContainer 
+        center={position} 
+        zoom={8} 
+        zoomControl={false} // Matikan zoom default agar bisa dipindah
+        style={{ height: '100%', width: '100%' }}
+      >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         
-        {reports.map((report) => (
-          <Marker 
-            key={report.id} 
-            position={[report.lat, report.lng]} 
-            // Memilih icon berdasarkan kategori, jika tidak cocok pakai DEFAULT
-            icon={icons[report.category] || icons['DEFAULT']}
-          >
-            <Popup minWidth={200}>
-              <div className="font-sans p-1">
-                {report.image && (
-                  <img src={report.image} alt="Bukti" className="w-full h-24 object-cover rounded-lg mb-2" />
-                )}
-                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                  report.category === 'KEBAKARAN HUTAN' ? 'text-red-600 bg-red-50' : 
-                  report.category === 'ILEGAL LOGGING' ? 'text-green-600 bg-green-50' : 'text-orange-600 bg-orange-50'
-                }`}>
-                  {report.category}
-                </span>
-                <h4 className="font-bold text-slate-800 mt-1">{report.reporter}</h4>
-                <p className="text-xs text-slate-600 leading-tight">{report.description}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {/* Pindahkan tombol zoom ke kanan bawah agar tidak tertutup */}
+        <ZoomControl position="bottomright" />
+        
+        {reports.map((report) => {
+          // Debugging: Log kategori ke konsol untuk cek nama kolom
+          console.log("Kategori Report:", report.category); 
+          
+          return (
+            <Marker 
+              key={report.id} 
+              position={[report.lat, report.lng]} 
+              // Gunakan .toUpperCase() agar aman dari typo huruf kecil di DB
+              icon={icons[report.category?.toUpperCase()] || icons['DEFAULT']}
+            >
+              <Popup>
+                <div className="text-xs font-bold">{report.category}</div>
+                <div className="text-[10px]">{report.reporter}</div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );
