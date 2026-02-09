@@ -20,15 +20,21 @@ export default function Dashboard() {
   const [file, setFile] = useState<File | null>(null);
   
   const [currentTime, setCurrentTime] = useState("");
-  const [randomStats, setRandomStats] = useState<number[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
   const [formData, setFormData] = useState({ reporter: "", category: "Ilegal Logging", lat: "", lng: "", description: "" });
   const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true); // Tambahkan loading state
 
-  // Fetch profile user yang sedang login
+  // Fungsi Logout
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase
@@ -38,19 +44,26 @@ export default function Dashboard() {
           .single();
         setProfile(data);
       }
+      setLoading(false);
     };
+
     fetchProfile();
+
+    // Listener untuk perubahan auth (Login/Logout otomatis update UI)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setProfile(null);
+      } else {
+        fetchProfile();
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     setIsMounted(true);
     fetchReports();
-    
-    setRandomStats([
-      Math.floor(Math.random() * 90) + 10,
-      Math.floor(Math.random() * 90) + 10,
-      Math.floor(Math.random() * 90) + 10
-    ]);
 
     const timer = setInterval(() => {
       setCurrentTime(new Date().toLocaleTimeString());
@@ -65,12 +78,12 @@ export default function Dashboard() {
           if (payload.eventType === 'INSERT') {
             setReports((current) => [payload.new, ...current]);
             // Alarm berbunyi hanya untuk Pemantau & Admin
-            if (profile?.role !== 'MASYARAKAT') {
+            if (profile?.role === 'ADMIN' || profile?.role === 'PEMANTAU') {
                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
                audio.play().catch(() => console.log("Audio play blocked"));
             }
           } else if (payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
-            fetchReports(); // Refresh data jika ada update status/hapus
+            fetchReports();
           }
         }
       )
@@ -97,7 +110,6 @@ export default function Dashboard() {
     if (data) setReports(data);
   }
 
-  // FUNGSI UPDATE STATUS (UNTUK PEMANTAU & ADMIN)
   const updateReportStatus = async (id: string, newStatus: string) => {
     const { error } = await supabase
       .from('reports')
@@ -121,17 +133,6 @@ export default function Dashboard() {
         .eq('id', id);
       fetchReports();
     }
-  };
-
-  const exportToCSV = () => {
-    const headers = ["Reporter,Category,Status,Lat,Lng,Date\n"];
-    const rows = reports.map(r => `"${r.reporter}","${r.category}","${r.status}",${r.lat},${r.lng},"${new Date(r.created_at).toLocaleDateString()}"\n`);
-    const blob = new Blob([...headers, ...rows], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `FOREST_GUARD_LOG.csv`;
-    a.click();
   };
 
   const getLocation = () => {
@@ -183,7 +184,10 @@ export default function Dashboard() {
           <span className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-ping"></span> Live Satellite Feed
           </span>
-          <span className="text-slate-500">Access: <span className="text-white">{profile?.role || 'GUEST'}</span></span>
+          <span className="text-slate-500">Access: <span className="text-white">{loading ? "VERIFYING..." : (profile?.role || 'GUEST')}</span></span>
+          {profile && (
+            <button onClick={handleLogout} className="text-red-500 hover:text-red-400 border-l border-white/10 pl-6">LOGOUT</button>
+          )}
         </div>
         <div className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-widest">
           Aceh Local Time: <span className="text-white bg-emerald-500/10 px-2 py-1 rounded ml-2 font-black">
@@ -214,6 +218,7 @@ export default function Dashboard() {
             <option>Perburuan Satwa</option>
           </select>
           <div className="flex gap-2 ml-auto md:ml-0">
+            {!profile && <Link href="/login" className="bg-slate-800 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Login</Link>}
             <Link href="/gallery" className="bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black border border-blue-600/20 uppercase tracking-widest transition-all">Gallery</Link>
             <button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500 text-slate-900 px-6 py-2 rounded-xl text-[10px] font-black shadow-lg shadow-emerald-500/20 uppercase tracking-widest transition-all hover:-translate-y-0.5">+ LAPOR BARU</button>
           </div>
@@ -239,7 +244,9 @@ export default function Dashboard() {
         </div>
 
         {/* FEED: RESTRICTED TO PERSONNEL */}
-        {profile?.role === 'ADMIN' || profile?.role === 'PEMANTAU' ? (
+        {loading ? (
+            <div className="lg:col-span-3 flex items-center justify-center animate-pulse text-[10px] font-black uppercase tracking-widest text-slate-600">Syncing Intelligence...</div>
+        ) : profile?.role === 'ADMIN' || profile?.role === 'PEMANTAU' ? (
           <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
              <div className="flex justify-between items-center mb-4 px-3">
                 <h2 className="text-[10px] font-black text-white uppercase tracking-widest italic">Live Intelligence</h2>
@@ -273,9 +280,7 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* ACTION BUTTONS */}
                     <div className="pt-2 flex flex-col gap-2">
-                      {/* ROLE PEMANTAU ACTION */}
                       {profile?.role === 'PEMANTAU' && r.status === 'PENDING' && (
                         <button onClick={() => updateReportStatus(r.id, 'DIKUNJUNGI')} className="w-full py-2 bg-blue-600 text-white text-[9px] font-black rounded-xl uppercase tracking-widest">Kunjungi Lokasi</button>
                       )}
@@ -283,7 +288,6 @@ export default function Dashboard() {
                         <button onClick={() => updateReportStatus(r.id, 'MENUNGGU_APPROVAL')} className="w-full py-2 bg-orange-600 text-white text-[9px] font-black rounded-xl uppercase tracking-widest">Selesaikan Laporan</button>
                       )}
 
-                      {/* ROLE ADMIN APPROVAL */}
                       {profile?.role === 'ADMIN' && r.status === 'MENUNGGU_APPROVAL' && (
                         <div className="grid grid-cols-2 gap-2">
                           <button onClick={() => updateReportStatus(r.id, 'SELESAI')} className="py-2 bg-emerald-500 text-black text-[9px] font-black rounded-xl uppercase">Setujui</button>
@@ -307,7 +311,6 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* MODAL LAPOR TETAP SAMA NAMUN DENGAN REPORTER_ID */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[9999] flex items-center justify-center p-6">
           <div className="bg-slate-900 border border-white/10 p-10 rounded-[3.5rem] w-full max-w-xl relative shadow-2xl">
