@@ -24,3 +24,29 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Ticker / Marquee styles for status indicator */
+:root {
+  --ticker-speed: 24s;
+}
+
+.ticker {
+  position: relative;
+  overflow: hidden;
+}
+
+.ticker-track {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ticker-move var(--ticker-speed) linear infinite;
+}
+
+.ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-move {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
