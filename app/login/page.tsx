@@ -17,6 +17,21 @@ export default function LoginPage() {
     else alert("Cek email kamu untuk verifikasi atau langsung cek di Supabase!")
   }
 
+  // Tambahkan fungsi Login ini di bawah fungsi handleSignUp
+const handleLogin = async () => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  
+  if (error) {
+    alert("Gagal Login: " + error.message);
+  } else {
+    alert("Berhasil Login sebagai " + email);
+    window.location.href = "/"; // Tendang user kembali ke halaman utama setelah login
+  }
+};
+
   return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4">
       <div className="bg-slate-900 p-8 rounded-2xl border border-emerald-500/30 w-full max-w-md">
@@ -30,6 +45,9 @@ export default function LoginPage() {
         <button onClick={handleSignUp} className="w-full bg-emerald-600 hover:bg-emerald-500 text-black font-black p-3 rounded-lg transition-all">
           CREATE ACCOUNT
         </button>
+        <button onClick={handleLogin} className="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-white font-bold p-3 rounded-lg transition-all border border-white/10">
+  LOG IN TO ACCESS
+</button>
       </div>
     </div>
   )
