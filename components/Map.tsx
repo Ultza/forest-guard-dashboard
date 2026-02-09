@@ -24,7 +24,7 @@ export default function Map({ reports }: { reports: any[] }) {
   const position: [number, number] = [4.1755, 96.1249];
 
   return (
-    <div className="w-full h-full rounded-2xl overflow-hidden relative border-2 border-slate-800">
+    <div className="map-root w-full h-full rounded-2xl overflow-hidden relative border-2 border-slate-800">
       
       {/* Label Tactical (Z-Index disesuaikan) */}
       <div className="absolute top-4 left-12 z-[1000] bg-slate-900/80 border border-emerald-500/50 px-3 py-1 rounded-md">
@@ -57,8 +57,8 @@ export default function Map({ reports }: { reports: any[] }) {
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         
-        {/* Pindahkan tombol zoom ke kanan bawah agar tidak tertutup */}
-        <ZoomControl position="bottomright" />
+        {/* Tempatkan tombol zoom di kanan atas dan pastikan berada di atas label */}
+        <ZoomControl position="topright" />
         
         {reports.map((report) => {
           // Debugging: Log kategori ke konsol untuk cek nama kolom

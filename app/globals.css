@@ -50,3 +50,12 @@ body {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-50%); }
 }
+
+/* Map control tweaks so zoom buttons don't sit behind labels */
+.map-root .leaflet-control-zoom {
+  z-index: 1200 !important;
+}
+.map-root .leaflet-top.leaflet-right {
+  margin-top: 0.75rem;
+  margin-right: 0.75rem;
+}
