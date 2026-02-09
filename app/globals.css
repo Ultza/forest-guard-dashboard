@@ -10,11 +10,23 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Menambahkan animasi kustom ke dalam tema Tailwind v4 */
+  @keyframes scan {
+    0% { top: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+  @keyframes loading-bar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #020617; /* Dipergelap agar lebih kontras dengan emerald */
     --foreground: #ededed;
   }
 }
@@ -25,7 +37,41 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Ticker / Marquee styles for status indicator */
+/* --- INTEGRATED INTELLIGENCE STYLES --- */
+
+/* Efek Scanner Laser pada Foto Galeri */
+@keyframes scan {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Custom Scrollbar bergaya Matrix/Cyberpunk */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10b981; /* Warna Emerald saat disentuh */
+}
+
+/* Glassmorphism untuk Modal Detail */
+.glass-modal {
+  background: rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* --- EXISTING TICKER STYLES --- */
 :root {
   --ticker-speed: 24s;
 }
@@ -42,16 +88,12 @@ body {
   animation: ticker-move var(--ticker-speed) linear infinite;
 }
 
-.ticker:hover .ticker-track {
-  animation-play-state: paused;
-}
-
 @keyframes ticker-move {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-50%); }
 }
 
-/* Map control tweaks so zoom buttons don't sit behind labels */
+/* Map control tweaks */
 .map-root .leaflet-control-zoom {
   z-index: 1200 !important;
 }
