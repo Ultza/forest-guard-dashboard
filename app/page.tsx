@@ -24,7 +24,7 @@ export default function Dashboard() {
 
   const [formData, setFormData] = useState({ reporter: "", category: "Ilegal Logging", lat: "", lng: "", description: "" });
   const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true); // Tambahkan loading state
+  const [loading, setLoading] = useState(true);
 
   // Fungsi Logout
   const handleLogout = async () => {
@@ -49,7 +49,6 @@ export default function Dashboard() {
 
     fetchProfile();
 
-    // Listener untuk perubahan auth (Login/Logout otomatis update UI)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         setProfile(null);
@@ -77,7 +76,6 @@ export default function Dashboard() {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setReports((current) => [payload.new, ...current]);
-            // Alarm berbunyi hanya untuk Pemantau & Admin
             if (profile?.role === 'ADMIN' || profile?.role === 'PEMANTAU') {
                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
                audio.play().catch(() => console.log("Audio play blocked"));
@@ -246,7 +244,7 @@ export default function Dashboard() {
         {/* FEED: RESTRICTED TO PERSONNEL */}
         {loading ? (
             <div className="lg:col-span-3 flex items-center justify-center animate-pulse text-[10px] font-black uppercase tracking-widest text-slate-600">Syncing Intelligence...</div>
-        ) : profile?.role === 'ADMIN' || profile?.role === 'PEMANTAU' ? (
+        ) : (profile?.role === 'ADMIN' || profile?.role === 'PEMANTAU') ? (
           <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
              <div className="flex justify-between items-center mb-4 px-3">
                 <h2 className="text-[10px] font-black text-white uppercase tracking-widest italic">Live Intelligence</h2>
