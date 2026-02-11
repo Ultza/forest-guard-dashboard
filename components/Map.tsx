@@ -1,5 +1,5 @@
 "use client"
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -20,7 +20,7 @@ const icons: { [key: string]: L.Icon } = {
   'DEFAULT': createIcon('blue')
 };
 
-export default function Map({ reports, isSatellite = true }: { reports: any[]; isSatellite?: boolean }) {
+export default function Map({ reports, isSatellite = true, showHeatmap = false, heatmapScale = 3000 }: { reports: any[]; isSatellite?: boolean; showHeatmap?: boolean; heatmapScale?: number }) {
   const position: [number, number] = [4.1755, 96.1249];
   
   // Tentukan URL tile layer berdasarkan mode
@@ -68,15 +68,32 @@ export default function Map({ reports, isSatellite = true }: { reports: any[]; i
         {/* Tempatkan tombol zoom di kanan atas dan pastikan berada di atas label */}
         <ZoomControl position="topright" />
         
+        {/* Render heatmap circles jika aktif dan ada data */}
+        {showHeatmap && reports.length > 0 && reports
+          .filter(r => r.lat && r.lng)
+          .map((r, idx) => {
+            const intensity = r.status === 'SELESAI' ? 0.25 : r.status === 'DIKUNJUNGI' ? 0.6 : 1;
+            const radius = Math.max(150, (heatmapScale || 3000) * intensity);
+            const color = (r.category || '').toLowerCase().includes('ilegal') ? '#10b981' : (r.category || '').toLowerCase().includes('kebakaran') ? '#ef4444' : '#f97316';
+
+            return (
+              <Circle
+                key={`heat-${r.id}-${idx}`}
+                center={[r.lat as number, r.lng as number]}
+                radius={radius}
+                pathOptions={{ color, fillColor: color, fillOpacity: 0.18, weight: 0 }}
+              />
+            );
+          })}
+        
+        {/* Render markers */}
         {reports.map((report) => {
-          // Debugging: Log kategori ke konsol untuk cek nama kolom
           console.log("Kategori Report:", report.category); 
           
           return (
             <Marker 
               key={report.id} 
               position={[report.lat, report.lng]} 
-              // Gunakan .toUpperCase() agar aman dari typo huruf kecil di DB
               icon={icons[report.category?.toUpperCase()] || icons['DEFAULT']}
             >
               <Popup>

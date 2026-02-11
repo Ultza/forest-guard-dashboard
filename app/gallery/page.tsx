@@ -7,6 +7,8 @@ export default function GalleryPage() {
   const [reports, setReports] = useState<any[]>([]);
   const [filteredReports, setFilteredReports] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const [userRole, setUserRole] = useState("GUEST");
@@ -127,6 +129,20 @@ export default function GalleryPage() {
       </div>
 
       {/* GALLERY GRID */}
+      <div className="max-w-7xl mx-auto mb-6 flex flex-col md:flex-row gap-3 items-center">
+        <div className="flex items-center gap-2 bg-slate-900/40 p-3 rounded-xl border border-white/5">
+          <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="bg-transparent text-[10px] font-black uppercase p-2 border border-white/5 rounded">
+            <option value="ALL">All Categories</option>
+            <option value="Ilegal Logging">Ilegal Logging</option>
+            <option value="Kebakaran Hutan">Kebakaran Hutan</option>
+            <option value="Perburuan Satwa">Perburuan Satwa</option>
+          </select>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-transparent text-[10px] p-2 border border-white/5 rounded" />
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-transparent text-[10px] p-2 border border-white/5 rounded" />
+          <button onClick={() => { setStartDate(''); setEndDate(''); setSelectedCategory('ALL'); }} className="px-3 py-1 rounded bg-white/5 text-[10px] font-black border border-white/5">Reset</button>
+        </div>
+      </div>
+
       {loading ? (
         <div className="flex flex-col justify-center items-center h-64 gap-4">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-emerald-500"></div>
@@ -134,7 +150,26 @@ export default function GalleryPage() {
         </div>
       ) : (
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-20">
-          {filteredReports.map((r) => (
+          {(() => {
+            // Apply smart filters (category + date range)
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+            return filteredReports
+              .filter(r => {
+                if (selectedCategory && selectedCategory !== 'ALL' && r.category?.toUpperCase() !== selectedCategory.toUpperCase()) return false;
+                if (start) {
+                  const created = new Date(r.created_at);
+                  if (created < start) return false;
+                }
+                if (end) {
+                  const created = new Date(r.created_at);
+                  // include whole day
+                  const endOfDay = new Date(end); endOfDay.setHours(23,59,59,999);
+                  if (created > endOfDay) return false;
+                }
+                return true;
+              })
+              .map((r) => (
             <div 
               key={r.id} 
               onClick={() => setSelectedReport(r)}
@@ -152,6 +187,14 @@ export default function GalleryPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-80" />
                 
+                {/* Hover metadata panel */}
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-[10px] p-2 rounded-lg border border-white/5">
+                  <div className="font-black text-emerald-400">Tactical</div>
+                  <div className="text-slate-300">{r.reporter}</div>
+                  <div className="text-slate-400 text-[11px]">{r.lat?.toFixed ? `${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}` : `${r.lat}, ${r.lng}`}</div>
+                  {(() => { try { const v = localStorage.getItem(`ai_verif_${r.id}`); return v ? <div className="mt-1"><span className={`px-2 py-1 rounded-full ${v === 'VERIFIED BY AI' ? 'bg-emerald-500 text-black' : 'bg-red-600 text-white'}`}>{v}</span></div> : null; } catch(e){ return null; } })()}
+                </div>
+
                 <div className="absolute bottom-6 left-6">
                    <span className={`text-[8px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest ${getCategoryColor(r.category)}`}>
                     {r.category}
@@ -173,7 +216,8 @@ export default function GalleryPage() {
                 </p>
               </div>
             </div>
-          ))}
+          ))
+          })()}
         </div>
       )}
 
