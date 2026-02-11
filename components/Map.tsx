@@ -20,8 +20,13 @@ const icons: { [key: string]: L.Icon } = {
   'DEFAULT': createIcon('blue')
 };
 
-export default function Map({ reports }: { reports: any[] }) {
+export default function Map({ reports, isSatellite = true }: { reports: any[]; isSatellite?: boolean }) {
   const position: [number, number] = [4.1755, 96.1249];
+  
+  // Tentukan URL tile layer berdasarkan mode
+  const tileLayerUrl = isSatellite 
+    ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
   return (
     <div className="map-root w-full h-full rounded-2xl overflow-hidden relative border-2 border-slate-800">
@@ -52,10 +57,13 @@ export default function Map({ reports }: { reports: any[] }) {
       <MapContainer 
         center={position} 
         zoom={8} 
-        zoomControl={false} // Matikan zoom default agar bisa dipindah
+        zoomControl={false}
         style={{ height: '100%', width: '100%' }}
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <TileLayer 
+          url={tileLayerUrl}
+          attribution={isSatellite ? '&copy; Esri' : '&copy; OpenStreetMap contributors'}
+        />
         
         {/* Tempatkan tombol zoom di kanan atas dan pastikan berada di atas label */}
         <ZoomControl position="topright" />

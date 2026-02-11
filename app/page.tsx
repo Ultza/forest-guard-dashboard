@@ -251,9 +251,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="lg:col-span-6 h-[60vh] relative space-y-3">
+        <div className="lg:col-span-6 h-[60vh] flex flex-col relative">
           {/* Satellite Toggle */}
-          <div className="flex items-center justify-center gap-3 px-4 py-2">
+          <div className="flex items-center justify-center gap-3 px-4 py-3 z-10 relative">
             <button
               onClick={() => setIsSatellite(true)}
               className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
@@ -276,9 +276,9 @@ export default function Dashboard() {
             </button>
           </div>
           
-          <div className="absolute inset-0 top-14 bg-slate-900 rounded-[3.5rem] border border-white/10 overflow-hidden shadow-2xl group scanlines-overlay">
-             <div className="absolute top-6 left-6 z-10 px-4 py-2 bg-black/70 backdrop-blur-md rounded-full border border-white/10 text-[9px] font-black text-emerald-400 tracking-[0.2em] uppercase italic">Tactical Monitoring {isSatellite ? '(SAT)' : '(MAP)'}</div>
-             <Map reports={filteredReports} />
+          <div className="flex-grow relative bg-slate-900 rounded-[3.5rem] border border-white/10 overflow-hidden shadow-2xl group scanlines-overlay">
+             <div className="absolute top-6 left-6 z-30 px-4 py-2 bg-black/70 backdrop-blur-md rounded-full border border-white/10 text-[9px] font-black text-emerald-400 tracking-[0.2em] uppercase italic pointer-events-none">Tactical Monitoring {isSatellite ? '(SAT)' : '(MAP)'}</div>
+             <Map reports={filteredReports} isSatellite={isSatellite} />
           </div>
         </div>
 
@@ -413,6 +413,10 @@ export default function Dashboard() {
           pointer-events: none;
           z-index: 20;
           border-radius: 3.5rem;
+        }
+        
+        .scanlines-overlay > div:first-child {
+          z-index: 21;
         }
       `}</style>
     </div>
