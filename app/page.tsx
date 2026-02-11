@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [isSatellite, setIsSatellite] = useState(true);
   
   const [currentTime, setCurrentTime] = useState("");
   const [isMounted, setIsMounted] = useState(false);
@@ -182,7 +183,9 @@ export default function Dashboard() {
           <span className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-ping"></span> Live Satellite Feed
           </span>
-          <span className="text-slate-500">Access: <span className="text-white">{loading ? "VERIFYING..." : (profile?.role || 'GUEST')}</span></span>
+          <span className="text-slate-500">Access: <span className={`text-white ${
+            loading ? '' : (profile?.role === 'ADMIN' || profile?.role === 'PEMANTAU' ? 'text-emerald-400' : 'text-blue-400')
+          }`}>{loading ? "VERIFYING..." : (profile?.role || 'GUEST')}</span></span>
           {profile && (
             <button onClick={handleLogout} className="text-red-500 hover:text-red-400 border-l border-white/10 pl-6">LOGOUT</button>
           )}
@@ -227,16 +230,54 @@ export default function Dashboard() {
         <div className="lg:col-span-3 space-y-4">
           <div className="bg-slate-900/60 border border-white/5 p-6 rounded-[2.5rem] backdrop-blur-3xl shadow-2xl">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2"><span className="h-1 w-3 bg-emerald-500 rounded-full"></span> Analysis</h3>
-            <div className="bg-black/40 p-5 rounded-3xl border border-white/5">
+            <div className="bg-black/40 p-5 rounded-3xl border border-white/5 mb-4">
               <p className="text-4xl font-black text-white">{filteredReports.length}</p>
               <p className="text-[9px] font-bold text-slate-600 uppercase mt-1 tracking-widest">Total Intelligence</p>
+            </div>
+            
+            <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-5 rounded-3xl border border-emerald-500/30 backdrop-blur-sm">
+              <h4 className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-2"><span className="text-base">🌡️</span> Environmental Status</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center bg-black/20 p-3 rounded-2xl border border-emerald-500/20">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase">Temperature</span>
+                  <span className="text-xl font-black text-emerald-400">32°C</span>
+                </div>
+                <div className="flex justify-between items-center bg-black/20 p-3 rounded-2xl border border-emerald-500/20">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase">Fire Risk Index</span>
+                  <span className="px-3 py-1 bg-emerald-500/30 text-emerald-300 rounded-full text-[9px] font-black uppercase border border-emerald-500/50">MODERATE</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-6 h-[60vh] relative">
-          <div className="absolute inset-0 bg-slate-900 rounded-[3.5rem] border border-white/10 overflow-hidden shadow-2xl group">
-             <div className="absolute top-6 left-6 z-10 px-4 py-2 bg-black/70 backdrop-blur-md rounded-full border border-white/10 text-[9px] font-black text-emerald-400 tracking-[0.2em] uppercase italic">Tactical Monitoring</div>
+        <div className="lg:col-span-6 h-[60vh] relative space-y-3">
+          {/* Satellite Toggle */}
+          <div className="flex items-center justify-center gap-3 px-4 py-2">
+            <button
+              onClick={() => setIsSatellite(true)}
+              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
+                isSatellite
+                  ? 'bg-emerald-600 text-slate-900 border-emerald-500 shadow-lg shadow-emerald-500/30'
+                  : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-white/20'
+              }`}
+            >
+              🛰️ Satellite View
+            </button>
+            <button
+              onClick={() => setIsSatellite(false)}
+              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
+                !isSatellite
+                  ? 'bg-blue-600 text-slate-900 border-blue-500 shadow-lg shadow-blue-500/30'
+                  : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-white/20'
+              }`}
+            >
+              🗺️ Map View
+            </button>
+          </div>
+          
+          <div className="absolute inset-0 top-14 bg-slate-900 rounded-[3.5rem] border border-white/10 overflow-hidden shadow-2xl group scanlines-overlay">
+             <div className="absolute top-6 left-6 z-10 px-4 py-2 bg-black/70 backdrop-blur-md rounded-full border border-white/10 text-[9px] font-black text-emerald-400 tracking-[0.2em] uppercase italic">Tactical Monitoring {isSatellite ? '(SAT)' : '(MAP)'}</div>
              <Map reports={filteredReports} />
           </div>
         </div>
@@ -247,7 +288,11 @@ export default function Dashboard() {
         ) : (profile?.role === 'ADMIN' || profile?.role === 'PEMANTAU') ? (
           <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
              <div className="flex justify-between items-center mb-4 px-3">
-                <h2 className="text-[10px] font-black text-white uppercase tracking-widest italic">Live Intelligence</h2>
+                <h2 className="text-[10px] font-black text-white uppercase tracking-widest italic">Live Intelligence <span className={`text-[9px] ml-2 ${
+                  profile?.role === 'ADMIN' || profile?.role === 'PEMANTAU'
+                    ? 'text-emerald-400'
+                    : 'text-blue-400'
+                }`}>({profile?.role})</span></h2>
                 <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
              </div>
             
@@ -302,9 +347,14 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="lg:col-span-3 bg-slate-900/20 p-6 rounded-3xl border border-dashed border-white/5 flex flex-col items-center justify-center text-center">
-            <span className="text-2xl mb-2">🔒</span>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Unauthorized Access<br/>Secure Feed Personnel Only</p>
+          <div className="lg:col-span-3 bg-gradient-to-br from-blue-900/20 to-cyan-900/10 p-8 rounded-3xl border-2 border-blue-500/30 backdrop-blur-xl flex flex-col items-center justify-center text-center shadow-2xl shadow-blue-500/10">
+            <div className="mb-6 text-5xl animate-pulse">🔐</div>
+            <h3 className="text-[11px] font-black text-blue-300 uppercase tracking-widest mb-3 italic border-l-2 border-blue-400 pl-3">Secure Access Panel</h3>
+            <p className="text-[9px] text-blue-400 uppercase tracking-widest mb-1 font-bold">User Status: <span className="text-blue-400">GUEST</span></p>
+            <p className="text-[9px] text-slate-500 uppercase tracking-widest mb-6 leading-relaxed">This feed is restricted to authorized personnel only.<br/>Contact administrator for access.</p>
+            <Link href="/login" className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl border border-blue-400/50 shadow-lg shadow-blue-500/20 transition-all hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5">
+              🔓 Request Access
+            </Link>
           </div>
         )}
       </main>
@@ -341,6 +391,29 @@ export default function Dashboard() {
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
+        
+        .scanlines-overlay {
+          position: relative;
+        }
+        
+        .scanlines-overlay::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-image: repeating-linear-gradient(
+            0deg,
+            rgba(16, 185, 129, 0.08),
+            rgba(16, 185, 129, 0.08) 2px,
+            transparent 2px,
+            transparent 4px
+          );
+          pointer-events: none;
+          z-index: 20;
+          border-radius: 3.5rem;
+        }
       `}</style>
     </div>
   );
